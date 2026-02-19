@@ -13,7 +13,7 @@ const modalVariants: Variants = {
 
 export default function StartScreen({ onStart }: StartScreenProps) {
     return (
-        <div className="w-full h-full flex-center p-4">
+        <div className="game-container">
             <motion.div
                 className="modal"
                 variants={modalVariants}

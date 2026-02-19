@@ -3,18 +3,18 @@
 :root {
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
-  
+
   --bg-color: #ffffff;
   --text-primary: #000000;
   --text-secondary: #666666;
-  
+
   --modal-bg: #000000;
   --modal-text: #ffffff;
   --modal-text-dim: #a3a3a3;
-  
+
   --border-radius-lg: 16px;
   --border-radius-full: 9999px;
-  
+
   --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -105,4 +105,54 @@ input {
 
 .h-full {
   height: 100%;
+}
+
+.game-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  position: relative;
+  background-color: var(--bg-color);
+}
+
+.game-card {
+  width: 100%;
+  max-width: 640px;
+  height: 440px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .game-container {
+    padding: 0;
+  }
+
+  .game-card {
+    max-width: 100% !important;
+    height: 100% !important;
+    min-height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .modal {
+    max-width: 100% !important;
+    height: 100% !important;
+    min-height: 100vh;
+    border-radius: 0;
+    justify-content: center;
+    padding: 32px 24px;
+  }
+
+  .modal-title {
+    font-size: 3.5rem;
+  }
 }

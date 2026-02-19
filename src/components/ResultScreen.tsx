@@ -31,7 +31,7 @@ export default function ResultScreen({ roundsData, onPlayAgain }: ResultScreenPr
     const formattedScore = (Math.round(totalScore * 10) / 10).toFixed(1);
 
     return (
-        <div className="w-full h-full flex-center p-4">
+        <div className="game-container">
             <motion.div
                 className="modal"
                 style={{ maxWidth: '600px', backgroundColor: 'var(--modal-bg)' }}

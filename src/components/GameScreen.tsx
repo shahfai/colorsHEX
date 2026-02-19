@@ -102,17 +102,12 @@ export default function GameScreen({
         const targetTextColor = targetLuma < 128 ? '#ffffff' : '#000000';
 
         return (
-            <div className="w-full h-full flex-center p-4 relative" style={{ backgroundColor: 'var(--bg-color)' }}>
+            <div className="game-container">
                 <motion.div
                     initial={{ opacity: 0, y: 20, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    style={{
-                        width: '100%', maxWidth: '640px', height: '440px',
-                        display: 'flex', flexDirection: 'column',
-                        borderRadius: '24px', overflow: 'hidden',
-                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
-                    }}
+                    className="game-card"
                 >
                     {/* Top Half - Guess */}
                     <div style={{ flex: 1, backgroundColor: guessText, position: 'relative', padding: '32px', transition: 'background-color 0.5s' }}>
@@ -182,19 +177,13 @@ export default function GameScreen({
     const currentBg = status === 'memorize' ? targetColor : (isValidHex(guessText) ? guessText : '#ffffff');
 
     return (
-        <div className="w-full h-full flex-center p-4 relative" style={{ backgroundColor: 'var(--bg-color)' }}>
+        <div className="game-container">
             <motion.div
                 animate={{ backgroundColor: currentBg, opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.5, ease: 'easeInOut' }}
                 initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                style={{
-                    width: '100%', maxWidth: '640px', height: '440px',
-                    display: 'flex', flexDirection: 'column',
-                    borderRadius: '24px', overflow: 'hidden',
-                    boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-                    position: 'relative'
-                }}
+                className="game-card"
             >
                 <div style={{
                     position: 'absolute',
