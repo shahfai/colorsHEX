@@ -1,4 +1,4 @@
-# Color HEX Guessing Game
+# Color HEX Guessing Game (dialed.gg but with HEX)
 
 🎯 **A sleek, minimalist web game to test your color memory and hex-code knowledge.**
 
