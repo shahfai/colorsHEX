@@ -18,14 +18,16 @@ function App() {
   const [currentRound, setCurrentRound] = useState(1);
   const [roundsData, setRoundsData] = useState<RoundData[]>([]);
   const [targetColor, setTargetColor] = useState('#000000');
+  const [isHardMode, setIsHardMode] = useState(true);
 
   const TOTAL_ROUNDS = 5;
 
-  const startGame = () => {
+  const startGame = (hardMode: boolean = true) => {
+    setIsHardMode(hardMode);
     setGameState('playing');
     setCurrentRound(1);
     setRoundsData([]);
-    setTargetColor(generateRandomColor());
+    setTargetColor(generateRandomColor(hardMode));
   };
 
   const handleRoundComplete = (guessHex: string, score: number) => {
@@ -39,7 +41,7 @@ function App() {
 
     if (currentRound < TOTAL_ROUNDS) {
       setCurrentRound(prev => prev + 1);
-      setTargetColor(generateRandomColor());
+      setTargetColor(generateRandomColor(isHardMode));
     } else {
       setGameState('result');
     }
@@ -54,6 +56,7 @@ function App() {
           currentRound={currentRound}
           totalRounds={TOTAL_ROUNDS}
           targetColor={targetColor}
+          isHardMode={isHardMode}
           onRoundComplete={handleRoundComplete}
         />
       )}
@@ -61,7 +64,7 @@ function App() {
         <ResultScreen
           key="result"
           roundsData={roundsData}
-          onPlayAgain={startGame}
+          onPlayAgain={() => setGameState('start')}
         />
       )}
     </AnimatePresence>

@@ -1,5 +1,5 @@
+import { useState } from 'react';
 import { motion, type Variants } from 'framer-motion';
-import { RotateCcw } from 'lucide-react';
 import type { RoundData } from '../App';
 
 interface ResultScreenProps {
@@ -27,98 +27,100 @@ const itemVariants: Variants = {
 };
 
 export default function ResultScreen({ roundsData, onPlayAgain }: ResultScreenProps) {
+    const [copied, setCopied] = useState(false);
     const totalScore = roundsData.reduce((acc, curr) => acc + curr.score, 0);
-    const formattedScore = (Math.round(totalScore * 10) / 10).toFixed(1);
+    const formattedScore = (Math.round(totalScore * 10) / 10).toFixed(2);
+
+    const getTotalRemark = (score: number) => {
+        if (score >= 48) return 'Невероятно. Вы принтер.';
+        if (score >= 40) return 'Отлично. Почти идеально.';
+        if (score >= 30) return 'Неплохо. Уже близко.';
+        if (score >= 15) return 'Правое полушарие. Неверное все.';
+        return 'Живое доказательство того, что некоторым глаза даны зря.';
+    };
+
+    const handleShare = async () => {
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy text: ', err);
+        }
+    };
 
     return (
         <div className="game-container">
             <motion.div
-                className="modal"
-                style={{ maxWidth: '600px', backgroundColor: 'var(--modal-bg)' }}
+                className="game-card"
+                style={{ backgroundColor: '#050505', color: '#ffffff' }}
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
                 exit="exit"
             >
-                <motion.h2 variants={itemVariants} style={{ fontSize: '3rem', fontWeight: 700, margin: 0 }}>
-                    Results
-                </motion.h2>
+                <div style={{ padding: '32px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <motion.div variants={itemVariants} style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                        <span style={{ fontSize: '5rem', fontWeight: 600, lineHeight: 1, letterSpacing: '-0.03em' }}>
+                            {formattedScore}
+                        </span>
+                        <span style={{ fontSize: '3rem', fontWeight: 500, color: 'rgba(255,255,255,0.4)', letterSpacing: '-0.03em' }}>
+                            /50
+                        </span>
+                    </motion.div>
 
-                <motion.p variants={itemVariants} className="modal-text" style={{ fontSize: '1.25rem', marginTop: 0 }}>
-                    You scored <span style={{ color: 'var(--modal-text)', fontWeight: 600 }}>{formattedScore}</span> out of 50.0
-                </motion.p>
+                    <motion.p variants={itemVariants} style={{
+                        fontSize: '1.1rem',
+                        lineHeight: 1.4,
+                        color: 'rgba(255,255,255,0.7)',
+                        marginTop: '16px',
+                        maxWidth: '90%'
+                    }}>
+                        {getTotalRemark(totalScore)}
+                    </motion.p>
 
-                <motion.div variants={itemVariants} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
-                    {roundsData.map((round, index) => (
-                        <motion.div
-                            key={index}
-                            variants={itemVariants}
+                    <div style={{ flex: 1 }} />
+
+                    <motion.div variants={itemVariants} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '32px' }}>
+                        <motion.button
+                            onClick={handleShare}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                             style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '16px',
-                                backgroundColor: 'rgba(255,255,255,0.05)',
-                                padding: '16px',
+                                width: '100%',
+                                padding: '16px 0',
+                                backgroundColor: '#ffffff',
+                                color: '#000000',
                                 borderRadius: '12px',
-                                border: '1px solid rgba(255,255,255,0.05)'
+                                fontSize: '1.1rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                border: 'none'
                             }}
                         >
-                            <span style={{ fontSize: '1.2rem', fontWeight: 600, width: '30px', opacity: 0.5 }}>
-                                #{index + 1}
-                            </span>
+                            {copied ? 'Скопировано!' : 'Поделиться'}
+                        </motion.button>
 
-                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                                    <div style={{
-                                        width: '40px', height: '40px', borderRadius: '8px',
-                                        backgroundColor: round.targetHex,
-                                        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.1)'
-                                    }} />
-                                    <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', opacity: 0.7 }}>{round.targetHex}</span>
-                                </div>
-
-                                <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                                    <div style={{ width: '100%', maxWidth: '40px', height: '2px', backgroundColor: 'rgba(255,255,255,0.1)' }} />
-                                </div>
-
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                                    <div style={{
-                                        width: '40px', height: '40px', borderRadius: '8px',
-                                        backgroundColor: round.guessHex,
-                                        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.1)'
-                                    }} />
-                                    <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', opacity: 0.7 }}>{round.guessHex}</span>
-                                </div>
-                            </div>
-
-                            <div style={{ fontSize: '1.5rem', fontWeight: 700, width: '60px', textAlign: 'right' }}>
-                                {round.score.toFixed(1)}
-                            </div>
-                        </motion.div>
-                    ))}
-                </motion.div>
-
-                <motion.div variants={itemVariants} style={{ display: 'flex', marginTop: '24px' }}>
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={onPlayAgain}
-                        style={{
-                            padding: '16px 32px',
-                            backgroundColor: 'var(--modal-text)',
-                            color: 'var(--modal-bg)',
-                            borderRadius: 'var(--border-radius-full)',
-                            fontSize: '1.1rem',
-                            fontWeight: 600,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px'
-                        }}
-                    >
-                        <RotateCcw size={20} />
-                        Play Again
-                    </motion.button>
-                </motion.div>
+                        <button
+                            onClick={onPlayAgain}
+                            style={{
+                                color: 'rgba(255,255,255,0.6)',
+                                fontSize: '1rem',
+                                fontWeight: 500,
+                                margin: '0 auto',
+                                transition: 'color 0.2s',
+                                cursor: 'pointer',
+                                background: 'none',
+                                border: 'none',
+                                padding: '8px'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.color = '#ffffff'}
+                            onMouseOut={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}
+                        >
+                            Играть снова
+                        </button>
+                    </motion.div>
+                </div>
             </motion.div>
         </div>
     );

@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
-import { isValidHex, calculateColorScore, hexToHsv } from '../utils/color';
+import { isValidHex, calculateColorScore } from '../utils/color';
 
 interface GameScreenProps {
     currentRound: number;
     totalRounds: number;
     targetColor: string;
+    isHardMode: boolean;
     onRoundComplete: (guessHex: string, score: number) => void;
 }
 
@@ -16,19 +17,21 @@ export default function GameScreen({
     currentRound,
     totalRounds,
     targetColor,
+    isHardMode,
     onRoundComplete
 }: GameScreenProps) {
     const [status, setStatus] = useState<RoundStatus>('memorize');
     const [guessText, setGuessText] = useState('#');
-    const [timeLeft, setTimeLeft] = useState(3);
+    const [timeLeft, setTimeLeft] = useState(5);
     const [roundScore, setRoundScore] = useState(0);
+    const [shakeError, setShakeError] = useState(false);
 
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         setStatus('memorize');
         setGuessText('#');
-        setTimeLeft(3);
+        setTimeLeft(5);
 
         const timer = setInterval(() => {
             setTimeLeft((prev) => {
@@ -52,33 +55,63 @@ export default function GameScreen({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!isValidHex(guessText)) return;
+        const actualGuess = getPreviewHex(guessText);
+        if (!isValidHex(actualGuess)) return;
 
-        const score = calculateColorScore(targetColor, guessText);
+        const score = calculateColorScore(targetColor, actualGuess);
         setRoundScore(score);
         setStatus('round_result');
     };
 
     const handleNextRound = () => {
-        onRoundComplete(guessText, roundScore);
+        const actualGuess = getPreviewHex(guessText);
+        onRoundComplete(actualGuess, roundScore);
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let val = e.target.value;
+        const rawVal = e.target.value.toUpperCase();
+        let val = rawVal.replace(/[^#0-9A-F]/g, '');
+        let hasInvalid = rawVal !== val; // If non-hex chars were stripped
+
         if (!val.startsWith('#')) {
             val = '#' + val.replace(/#/g, '');
         }
-        if (val.length <= 7) {
-            setGuessText(val.toUpperCase());
+
+        if (!isHardMode) {
+            let hexPart = val.replace(/#/g, '');
+            let easyInvalid = false;
+            hexPart = hexPart.split('').filter(char => {
+                const isValid = ['0', '8', 'F'].includes(char);
+                if (!isValid) easyInvalid = true;
+                return isValid;
+            }).join('');
+
+            if (easyInvalid) hasInvalid = true;
+            val = '#' + hexPart;
+        }
+
+        const maxLen = isHardMode ? 7 : 4;
+
+        if (rawVal.length > maxLen && rawVal.length > guessText.length && !hasInvalid) {
+            hasInvalid = true; // Shake if typing beyond max length
+        }
+
+        if (hasInvalid) {
+            setShakeError(true);
+            setTimeout(() => setShakeError(false), 300);
+        }
+
+        if (val.length <= maxLen) {
+            setGuessText(val);
         }
     };
 
     const getRemark = (score: number) => {
-        if (score >= 9.5) return 'Unbelievable. You are a printer.';
-        if (score >= 8.0) return 'Great job. Almost perfect.';
-        if (score >= 6.0) return 'Not bad. You\'re getting there.';
-        if (score >= 3.0) return 'Right hemisphere. Wrong everything.';
-        return 'Are you even looking at the screen?';
+        if (score >= 9.5) return 'Невероятно. Вы принтер.';
+        if (score >= 8.0) return 'Отлично. Почти идеально.';
+        if (score >= 6.0) return 'Неплохо. Уже близко.';
+        if (score >= 3.0) return 'Правое полушарие. Неверное все.';
+        return 'Вы вообще смотрите на экран?';
     };
 
     const getLuma = (hex: string) => {
@@ -90,13 +123,28 @@ export default function GameScreen({
         return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     };
 
-    const isDarkBackground = isValidHex(guessText) ? getLuma(guessText) < 128 : false;
+    const getPreviewHex = (hex: string) => {
+        let clean = hex.toUpperCase().replace('#', '');
+        if (isHardMode) {
+            while (clean.length < 6) clean += '0';
+            return '#' + clean;
+        } else {
+            let easyExpanded = '';
+            for (let i = 0; i < 3; i++) {
+                easyExpanded += (clean[i] || '0') + '0';
+            }
+            return '#' + easyExpanded;
+        }
+    };
+
+    const actualGuess = getPreviewHex(guessText);
+    const currentBg = status === 'memorize' ? targetColor : actualGuess;
+    const isDarkBackground = getLuma(currentBg) < 128;
     const textColor = isDarkBackground ? '#ffffff' : '#000000';
 
     if (status === 'round_result') {
-        const guessHsv = hexToHsv(guessText);
-        const targetHsv = hexToHsv(targetColor);
-        const guessLuma = getLuma(guessText);
+
+        const guessLuma = getLuma(actualGuess);
         const targetLuma = getLuma(targetColor);
         const guessTextColor = guessLuma < 128 ? '#ffffff' : '#000000';
         const targetTextColor = targetLuma < 128 ? '#ffffff' : '#000000';
@@ -110,7 +158,7 @@ export default function GameScreen({
                     className="game-card"
                 >
                     {/* Top Half - Guess */}
-                    <div style={{ flex: 1, backgroundColor: guessText, position: 'relative', padding: '32px', transition: 'background-color 0.5s' }}>
+                    <div style={{ flex: 1, backgroundColor: actualGuess, position: 'relative', padding: '32px', transition: 'background-color 0.5s' }}>
                         <div style={{ color: guessTextColor, fontWeight: '500', opacity: 0.8, fontSize: '1rem' }}>
                             {currentRound} / {totalRounds}
                         </div>
@@ -125,9 +173,9 @@ export default function GameScreen({
                         </div>
 
                         <div style={{ position: 'absolute', bottom: '32px', left: '32px', color: guessTextColor }}>
-                            <div style={{ fontSize: '0.9rem', opacity: 0.7, fontWeight: 500, marginBottom: '2px' }}>Your selection</div>
+                            <div style={{ fontSize: '0.9rem', opacity: 0.7, fontWeight: 500, marginBottom: '2px' }}>Ваш выбор</div>
                             <div style={{ fontSize: '1.2rem', fontWeight: 600 }}>
-                                H{guessHsv.h} S{guessHsv.s} B{guessHsv.v}
+                                {isHardMode ? guessText : actualGuess}
                             </div>
                         </div>
                     </div>
@@ -135,9 +183,9 @@ export default function GameScreen({
                     {/* Bottom Half - Target */}
                     <div style={{ flex: 1, backgroundColor: targetColor, position: 'relative', padding: '32px', transition: 'background-color 0.5s' }}>
                         <div style={{ position: 'absolute', bottom: '32px', left: '32px', color: targetTextColor }}>
-                            <div style={{ fontSize: '0.9rem', opacity: 0.7, fontWeight: 500, marginBottom: '2px' }}>Original</div>
+                            <div style={{ fontSize: '0.9rem', opacity: 0.7, fontWeight: 500, marginBottom: '2px' }}>Оригинал</div>
                             <div style={{ fontSize: '1.2rem', fontWeight: 600 }}>
-                                H{targetHsv.h} S{targetHsv.s} B{targetHsv.v}
+                                {targetColor}
                             </div>
                         </div>
 
@@ -174,7 +222,6 @@ export default function GameScreen({
         );
     }
 
-    const currentBg = status === 'memorize' ? targetColor : (isValidHex(guessText) ? guessText : '#ffffff');
 
     return (
         <div className="game-container">
@@ -219,13 +266,14 @@ export default function GameScreen({
                                 {timeLeft}
                             </div>
                             <div style={{ fontSize: '0.9rem', fontWeight: '600', opacity: 0.9 }}>
-                                Seconds to remember
+                                Секунд на запоминание
                             </div>
                         </motion.div>
                     ) : (
                         <motion.form
                             key="guess"
                             onSubmit={handleSubmit}
+                            onClick={() => inputRef.current?.focus()}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
@@ -237,61 +285,134 @@ export default function GameScreen({
                                 position: 'relative', zIndex: 10
                             }}
                         >
-                            <h2 style={{ fontSize: '1.5rem', fontWeight: 500, margin: 0 }}>Enter the HEX</h2>
+                            <h2 style={{ fontSize: '1.5rem', fontWeight: 500, margin: 0 }}>Введите HEX</h2>
 
-                            <div style={{ position: 'relative', width: '60%', marginTop: '24px' }}>
-                                <input
-                                    ref={inputRef}
-                                    type="text"
-                                    value={guessText}
-                                    onChange={handleInputChange}
-                                    spellCheck={false}
-                                    style={{
-                                        fontSize: '3rem',
-                                        color: 'inherit',
-                                        textAlign: 'center',
-                                        textTransform: 'uppercase',
-                                        borderBottom: `2px solid ${isDarkBackground ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}`,
-                                        padding: '8px 48px 8px 8px',
-                                        width: '100%',
-                                        letterSpacing: '0.1em',
-                                        fontWeight: 600,
-                                        transition: 'border-color 0.2s ease',
-                                        outline: 'none',
-                                        background: 'transparent'
-                                    }}
-                                />
-
-                                <AnimatePresence>
-                                    {isValidHex(guessText) && (
-                                        <motion.button
-                                            initial={{ scale: 0, opacity: 0 }}
-                                            animate={{ scale: 1, opacity: 1 }}
-                                            exit={{ scale: 0, opacity: 0 }}
-                                            type="submit"
+                            <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: '32px' }}>
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                    {/* Visual Text */}
+                                    {isHardMode ? (
+                                        <motion.div
+                                            animate={{ x: shakeError ? [-5, 5, -5, 5, 0] : 0, color: shakeError ? '#ef4444' : 'inherit' }}
+                                            transition={{ duration: 0.3 }}
                                             style={{
-                                                position: 'absolute',
-                                                right: '0',
-                                                top: '50%',
-                                                transform: 'translateY(-50%)',
-                                                width: '40px',
-                                                height: '40px',
-                                                borderRadius: '50%',
-                                                backgroundColor: textColor,
-                                                color: currentBg,
+                                                fontSize: '3.5rem',
+                                                fontFamily: 'var(--font-mono)',
+                                                fontWeight: 600,
+                                                whiteSpace: 'nowrap',
+                                                color: 'inherit',
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                                justifyContent: 'center',
-                                                cursor: 'pointer',
-                                                border: 'none',
-                                                outline: 'none'
                                             }}
                                         >
-                                            <ArrowRight size={20} />
-                                        </motion.button>
+                                            <span style={{ paddingRight: '12px' }}>#</span>
+                                            {[0, 1, 2].map(i => {
+                                                const char1 = guessText.length > i * 2 + 1 ? guessText[i * 2 + 1] : '';
+                                                const char2 = guessText.length > i * 2 + 2 ? guessText[i * 2 + 2] : '';
+                                                return (
+                                                    <span key={i} style={{ display: 'flex', alignItems: 'center', marginRight: i < 2 ? '24px' : '0' }}>
+                                                        <span style={{ width: '36px', textAlign: 'center' }}>
+                                                            {char1 ? char1 : <span style={{ opacity: 0.3 }}>0</span>}
+                                                        </span>
+                                                        <span style={{ width: '36px', textAlign: 'center' }}>
+                                                            {char2 ? char2 : <span style={{ opacity: 0.3 }}>0</span>}
+                                                        </span>
+                                                    </span>
+                                                )
+                                            })}
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div
+                                            animate={{ x: shakeError ? [-5, 5, -5, 5, 0] : 0, color: shakeError ? '#ef4444' : 'inherit' }}
+                                            transition={{ duration: 0.3 }}
+                                            style={{
+                                                fontSize: '3.5rem',
+                                                fontFamily: 'var(--font-mono)',
+                                                fontWeight: 600,
+                                                whiteSpace: 'nowrap',
+                                                color: 'inherit',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                            }}
+                                        >
+                                            <span style={{ paddingRight: '12px' }}>#</span>
+                                            {[0, 1, 2].map(i => {
+                                                const hasChar = guessText.length > i + 1;
+                                                const char = hasChar ? guessText[i + 1] : '';
+                                                return (
+                                                    <span key={i} style={{ display: 'flex', alignItems: 'center', marginRight: i < 2 ? '24px' : '0' }}>
+                                                        <span style={{ width: '36px', textAlign: 'center' }}>
+                                                            {hasChar ? char : <span style={{ opacity: 0.3 }}>0</span>}
+                                                        </span>
+                                                        <span style={{ width: '36px', textAlign: 'center', opacity: 0.3 }}>
+                                                            0
+                                                        </span>
+                                                    </span>
+                                                )
+                                            })}
+                                        </motion.div>
                                     )}
-                                </AnimatePresence>
+
+                                    {/* Hidden Input for Typing */}
+                                    <input
+                                        ref={inputRef}
+                                        type="text"
+                                        value={guessText}
+                                        onChange={handleInputChange}
+                                        spellCheck={false}
+                                        autoFocus
+                                        style={{
+                                            position: 'absolute',
+                                            inset: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                            fontSize: '3.5rem',
+                                            fontFamily: 'var(--font-mono)',
+                                            letterSpacing: '0.1em',
+                                            fontWeight: 600,
+                                            cursor: 'text',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            outline: 'none',
+                                            color: 'transparent',
+                                            caretColor: 'transparent',
+                                            margin: 0,
+                                            padding: 0
+                                        }}
+                                    />
+                                </div>
                             </div>
+
+                            <AnimatePresence>
+                                {isValidHex(guessText) && (
+                                    <motion.button
+                                        initial={{ scale: 0, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        exit={{ scale: 0, opacity: 0 }}
+                                        type="submit"
+                                        style={{
+                                            position: 'absolute',
+                                            right: '32px',
+                                            bottom: '32px',
+                                            width: '56px',
+                                            height: '56px',
+                                            borderRadius: '50%',
+                                            backgroundColor: textColor,
+                                            color: currentBg,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            cursor: 'pointer',
+                                            border: 'none',
+                                            outline: 'none',
+                                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                                        }}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                    >
+                                        <ArrowRight size={28} />
+                                    </motion.button>
+                                )}
+                            </AnimatePresence>
                         </motion.form>
                     )}
                 </AnimatePresence>

@@ -1,10 +1,19 @@
-export function generateRandomColor(): string {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
+export function generateRandomColor(isHardMode: boolean = true): string {
+    if (isHardMode) {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    } else {
+        const letters = ['0', '8', 'F'];
+        let color = '#';
+        for (let i = 0; i < 3; i++) {
+            color += letters[Math.floor(Math.random() * letters.length)] + '0';
+        }
+        return color;
     }
-    return color;
 }
 
 export function isValidHex(hex: string): boolean {
