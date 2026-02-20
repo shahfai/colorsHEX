@@ -30,7 +30,7 @@ body {
   font-family: var(--font-sans);
   background-color: var(--bg-color);
   color: var(--text-primary);
-  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   display: flex;
   justify-content: center;
@@ -41,7 +41,7 @@ body {
 
 #root {
   width: 100%;
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -138,15 +138,17 @@ input {
   .game-card {
     max-width: 100% !important;
     height: 100% !important;
-    min-height: 100vh;
+    min-height: 100dvh;
     border-radius: 0;
     box-shadow: none;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .modal {
     max-width: 100% !important;
     height: 100% !important;
-    min-height: 100vh;
+    min-height: 100dvh;
     border-radius: 0;
     justify-content: center;
     padding: 32px 24px;
